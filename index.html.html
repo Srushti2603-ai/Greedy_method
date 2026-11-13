@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Greedy Algorithm Simulator — Activity Selection</title>
+<style>
+:root{--navy:#17365f;--blue:#287bd1;--bg:#f4f7fb;--border:#d7e2ef;--text:#203047;--muted:#61738b;--green:#087f5b;--greenbg:#e8fff4;--gold:#b7791f}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+header{margin:14px;padding:24px 18px;border-radius:13px;background:linear-gradient(120deg,#17365f,#2b5b8e);color:#fff;text-align:center}h1{margin:0;font-size:clamp(24px,4vw,35px)}header p{margin:7px 0 0;color:#dbeafe}
+main{max-width:1200px;margin:auto;padding:0 14px 28px}.card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:18px;box-shadow:0 4px 14px #183b6809}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.field label{display:block;font-weight:750;margin-bottom:6px}.field input,.field select{width:100%;padding:11px;border:1px solid #c8d6e6;border-radius:8px;font:inherit;color:var(--text);background:#fff}
+button{border:0;border-radius:8px;padding:11px 16px;background:var(--blue);color:white;font:inherit;font-weight:750;cursor:pointer}button:hover{filter:brightness(.95)}button.secondary{background:#e9eff7;color:#29496f}button:disabled{opacity:.4;cursor:not-allowed}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.hint,.muted{font-size:13px;color:var(--muted)}.error{display:none;background:#fff0ee;color:#a52218;border-radius:8px;padding:10px;margin-top:12px}
+h2{font-size:20px;margin:0 0 12px}.input-table{width:100%;border-collapse:collapse;margin-top:12px}.input-table th,.input-table td{padding:8px;border-bottom:1px solid #e6edf5;text-align:left}.input-table input{width:100%;min-width:55px;padding:8px;border:1px solid #d3deeb;border-radius:6px}.input-table th{background:#f3f7fc}.timeline{margin:16px 0 10px}.axis{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;border-top:1px solid #cbd7e5;padding-top:5px}.activity{display:grid;grid-template-columns:90px 1fr;align-items:center;gap:10px;margin:9px 0}.activity-label{font-size:13px;font-weight:700}.bar-wrap{height:28px;position:relative;background:repeating-linear-gradient(to right,#f5f8fc 0,#f5f8fc calc(10% - 1px),#e1e9f2 calc(10% - 1px),#e1e9f2 10%);border-radius:5px;overflow:hidden}.bar{position:absolute;top:3px;height:22px;border-radius:5px;background:#a9c5e8;border:1px solid #729acb;color:#17365f;font-size:11px;font-weight:800;text-align:center;white-space:nowrap;overflow:hidden;line-height:20px}.bar.selected{background:#b7f1d4;border-color:#35a979;color:#075e42}.bar.rejected{background:#ffe0dc;border-color:#e59b91;color:#9e3025}.steps{display:grid;gap:10px}.step{border:1px solid var(--border);border-radius:9px;overflow:hidden}.step-head{background:#eef5ff;padding:9px 12px;font-weight:800;display:flex;gap:9px;align-items:center}.num{width:25px;height:25px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#287bd1;color:#fff;flex-shrink:0}.step-body{padding:11px 13px}.pill{display:inline-block;padding:3px 8px;border-radius:99px;background:#e5f8ed;color:#08754f;font-size:12px;font-weight:800}.pill.no{background:#fff0ee;color:#a52a20}.summary{padding:14px;border:1px solid #b9ecd2;background:var(--greenbg);color:#086247;border-radius:10px}.summary strong{font-size:18px}.statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}.stat{background:#f5f8fc;border:1px solid var(--border);border-radius:8px;padding:10px}.stat b{display:block;font-size:22px;color:#234e80}.stat span{font-size:12px;color:var(--muted)}.formula{padding:12px;background:#f7faff;border:1px solid #dce8f6;border-radius:8px}.formula code{font-size:14px;color:#214e82}
+@media(max-width:700px){.grid{grid-template-columns:1fr}.card{padding:13px}.activity{grid-template-columns:65px 1fr}.statgrid{grid-template-columns:1fr 1fr}}
+</style></head>
+<body>
+<header><h1>Greedy Algorithm Simulator</h1><p>Activity Selection Problem · Make the locally best choice and watch the schedule build.</p></header>
+<main>
+<section class="card">
+<h2>1. Enter activities</h2>
+<p class="muted">Each activity has a start time and finish time. The greedy strategy chooses the activity that finishes earliest, then selects the next activity that does not overlap.</p>
+<div class="grid">
+ <div class="field"><label for="example">Load example</label><select id="example"><option value="classic">Classic example (8 activities)</option><option value="small">Small example (5 activities)</option><option value="custom">Custom activities</option></select></div>
+ <div class="field"><label for="count">Number of activities</label><select id="count"><option>4</option><option>5</option><option selected>8</option><option>10</option></select></div>
+</div>
+<table class="input-table"><thead><tr><th>Activity</th><th>Start time</th><th>Finish time</th></tr></thead><tbody id="inputs"></tbody></table>
+<div class="actions"><button id="simulate">Run Greedy Simulation</button><button class="secondary" id="reset">Reset example</button></div>
+<div id="error" class="error" role="alert"></div>
+</section>
+<section class="card">
+<h2>2. Activity timeline</h2><p class="muted">Green bars are selected by the greedy algorithm. Red bars overlap a selected activity and are rejected. Blue bars are not selected because an earlier-finishing compatible choice is preferred.</p>
+<div id="timeline" class="timeline"><p class="muted">Run the simulation to display activities on the timeline.</p></div>
+<div id="stats"></div>
+</section>
+<section class="card">
+<h2>3. Step-by-step greedy decisions</h2>
+<div class="formula"><strong>Greedy rule:</strong> <code>Sort by finish time → choose the earliest-finishing compatible activity → repeat.</code><br><span class="muted">Compatibility condition: next activity's start time ≥ last selected activity's finish time.</span></div>
+<div id="steps" class="steps" style="margin-top:13px"><p class="muted">Decision steps will appear here.</p></div>
+</section>
+<section class="card">
+<h2>What this simulation demonstrates</h2>
+<ul><li><b>Greedy choice:</b> pick the available activity that finishes earliest.</li><li><b>Feasibility:</b> a chosen activity must not overlap the last chosen one.</li><li><b>Local choice, global goal:</b> repeat the rule to fit as many non-overlapping activities as possible.</li><li><b>Time complexity:</b> sorting takes O(n log n); the selection scan takes O(n), so total time is O(n log n).</li></ul>
+<p class="muted">This is the classic Activity Selection Problem, where the earliest-finish-time greedy strategy is optimal. Greedy strategies are not optimal for every problem.</p>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const examples={
+ classic:[[1,4],[3,5],[0,6],[5,7],[3,9],[5,9],[6,10],[8,11]],
+ small:[[1,3],[2,5],[4,6],[6,8],[7,9]],
+ custom:[[1,2],[2,4],[3,5],[5,7],[6,8]]
+};
+let current=examples.classic.map(a=>a.slice());
+function drawInputs(){
+ $('count').value=String(current.length);
+ $('inputs').innerHTML=current.map((a,i)=>`<tr><td><b>A${i+1}</b></td><td><input aria-label="Activity ${i+1} start" type="number" step="any" value="${a[0]}" data-i="${i}" data-k="0"></td><td><input aria-label="Activity ${i+1} finish" type="number" step="any" value="${a[1]}" data-i="${i}" data-k="1"></td></tr>`).join('');
+}
+function loadExample(){
+ const v=$('example').value;
+ if(v==='custom'){current=Array.from({length:Number($('count').value)},(_,i)=>[i*2,i*2+1]);}
+ else current=examples[v].map(a=>a.slice());
+ drawInputs();
+}
+function changeCount(){
+ const c=Number($('count').value);
+ current=Array.from({length:c},(_,i)=>current[i]?current[i].slice():[i*2,i*2+1]);
+ $('example').value='custom';drawInputs();
+}
+function read(){
+ const rows=[...$('inputs').querySelectorAll('tr')];
+ return rows.map((tr,i)=>{
+ const vals=[...tr.querySelectorAll('input')].map(x=>x.value.trim());
+ if(vals.some(x=>x===''||!Number.isFinite(Number(x))))throw Error('Please enter valid start and finish times for every activity.');
+ const s=Number(vals[0]),f=Number(vals[1]);
+ if(f<=s)throw Error(`Activity A${i+1} must finish after it starts.`);
+ return {id:i+1,start:s,finish:f};
+ });
+}
+function fmt(x){return Number(Number(x).toFixed(4)).toString()}
+function run(){
+ const err=$('error');err.style.display='none';
+ try{
+  const acts=read(), sorted=acts.slice().sort((a,b)=>a.finish-b.finish||a.start-b.start||a.id-b.id);
+  let lastFinish=-Infinity;const chosen=[],log=[];
+  sorted.forEach((a,i)=>{
+   const ok=a.start>=lastFinish;
+   log.push({a,ok,order:i+1,lastBefore:lastFinish});
+   if(ok){chosen.push(a);lastFinish=a.finish;}
+  });
+  const minT=Math.min(...acts.map(a=>a.start)),maxT=Math.max(...acts.map(a=>a.finish)),range=maxT-minT||1;
+  $('timeline').innerHTML=acts.map(a=>{
+    const status=chosen.some(c=>c.id===a.id)?'selected':(chosen.some(c=>a.start<c.finish&&a.finish>c.start)?'rejected':'');
+    const left=(a.start-minT)/range*100,width=(a.finish-a.start)/range*100;
+    return `<div class="activity"><div class="activity-label">A${a.id} (${fmt(a.start)}–${fmt(a.finish)})</div><div class="bar-wrap"><div class="bar ${status}" style="left:${left}%;width:${Math.max(width,1.5)}%;">A${a.id}</div></div></div>`;
+  }).join('')+`<div class="axis"><span>${fmt(minT)}</span><span>${fmt(minT+range*.25)}</span><span>${fmt(minT+range*.5)}</span><span>${fmt(minT+range*.75)}</span><span>${fmt(maxT)}</span></div>`;
+  $('stats').innerHTML=`<div class="summary"><strong>Selected activities: ${chosen.map(a=>'A'+a.id).join(', ')||'None'}</strong><br>These activities do not overlap and were selected by the earliest-finish-time greedy rule.</div><div class="statgrid"><div class="stat"><b>${chosen.length}</b><span>Activities selected</span></div><div class="stat"><b>${acts.length}</b><span>Total activities</span></div><div class="stat"><b>${acts.length-chosen.length}</b><span>Not selected</span></div></div>`;
+  $('steps').innerHTML=log.map((s,i)=>`<article class="step"><div class="step-head"><span class="num">${i+1}</span>Step ${i+1}: Consider activity A${s.a.id} <span class="pill ${s.ok?'':'no'}">${s.ok?'SELECT':'REJECT'}</span></div><div class="step-body">Activity A${s.a.id} starts at ${fmt(s.a.start)} and finishes at ${fmt(s.a.finish)}. ${s.ok?(s.lastBefore===-Infinity?'No activity has been selected yet.':`Its start time (${fmt(s.a.start)}) is at or after the previous selected finish time (${fmt(s.lastBefore)}).`):`It starts before the last selected activity finishes (${fmt(s.lastBefore)}), so it overlaps and cannot be selected.`} ${s.ok?`<b>Decision:</b> select A${s.a.id} and update the last finish time to ${fmt(s.a.finish)}.`:'<b>Decision:</b> skip this activity and keep the current finish time.'}</div></article>`).join('');
+ }catch(e){err.textContent=e.message;err.style.display='block';}
+}
+$('simulate').addEventListener('click',run);
+$('reset').addEventListener('click',()=>{ $('example').value='classic';loadExample();run();});
+$('example').addEventListener('change',loadExample);
+$('count').addEventListener('change',changeCount);
+$('inputs').addEventListener('change',()=>{$('example').value='custom'});
+loadExample();run();
+</script></body></html>
